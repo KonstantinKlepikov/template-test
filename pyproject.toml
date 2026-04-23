@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "py-project-template"
+name = "MyBrilliantProject"
 version = "0.0.0"
-description = "py-project-template"
+description = "MyBrilliantProject"
 authors = ["Some Author <example@example.com>"]
 readme = "README.md"
 

@@ -1,4 +1,4 @@
-# py-project-template
+# MyBrilliantProject
 
 ## Build local
 

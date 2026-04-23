@@ -1,10 +1,10 @@
 version: "3"
 
-name: py-project-template-dev
+name: MyBrilliantProject-dev
 
 services:
 
-  py-project-template-dev:
+  MyBrilliantProject-dev:
     env_file: .env
     restart: unless-stopped
     build:
@@ -15,7 +15,7 @@ services:
     - ../tests:/tests
     - /logs:/logs
     networks:
-    - py-project-template-dev-network
+    - MyBrilliantProject-dev-network
 
 networks:
-  py-project-template-dev-network:
+  MyBrilliantProject-dev-network:

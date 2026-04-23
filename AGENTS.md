@@ -1,4 +1,4 @@
-# Agent Instructions: py-project-template
+# Agent Instructions: MyBrilliantProject
 
 ## Overview
 

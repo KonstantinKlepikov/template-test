@@ -21,8 +21,8 @@ down-rm:
 
 # target: check - run tests, mypy and flake8
 check:
-	@echo "py-project-template-dev:"
-	@docker compose -f ./docker-compose/docker-stack.yml exec py-project-template-dev sh -c "cd .. && sh scripts/check.sh"
+	@echo "MyBrilliantProject-dev:"
+	@docker compose -f ./docker-compose/docker-stack.yml exec MyBrilliantProject-dev sh -c "cd .. && sh scripts/check.sh"
 
 # target: config - show docker stack info
 config:
@@ -32,41 +32,56 @@ config:
 	@docker compose -f ./docker-compose/docker-stack.yml config --volumes
 
 # target: create - create a python file with optional prompt header
-# Usage: make create --path=src/module.py [--pr=prompt_name]
+# Usage: make create path=src/module.py [pr=prompt1[,prompt2,...]]
 create:
 ifndef path
-	$(error Argument --path is required. Usage: make create --path=src/module.py)
+	$(error Argument --path is required. Usage: make create path=src/module.py)
 endif
 	@PARENT="$$(dirname "$(path)")"; \
 	if [ ! -d "$$PARENT" ]; then \
 		echo "Error: directory '$$PARENT' does not exist"; exit 1; \
 	fi; \
-	if [ -e "$(path)" ]; then \
-		echo "Error: file '$(path)' already exists"; exit 1; \
-	fi; \
+	PROMPT_BLOCK=""; \
 	if [ -n "$(pr)" ]; then \
-		PROMPT_FILE=$$(find prompts -maxdepth 1 \( -name "$(pr).*" -o -name "$(pr)" \) 2>/dev/null | head -1); \
-		if [ -z "$$PROMPT_FILE" ]; then \
-			echo "Error: prompt file '$(pr)' not found in prompts/"; exit 1; \
-		fi; \
-		printf '"""\n' > "$(path)"; \
-		cat "$$PROMPT_FILE" >> "$(path)"; \
-		printf '"""\n' >> "$(path)"; \
-	else \
-		touch "$(path)"; \
+		TMPBLOCK=$$(mktemp); \
+		for name in $$(echo "$(pr)" | tr ',' ' '); do \
+			PROMPT_FILE=$$(find prompts -maxdepth 1 \( -name "$$name.*" -o -name "$$name" \) 2>/dev/null | head -1); \
+			if [ -z "$$PROMPT_FILE" ]; then \
+				echo "Error: prompt file '$$name' not found in prompts/"; rm -f "$$TMPBLOCK"; exit 1; \
+			fi; \
+			printf '"""\n' >> "$$TMPBLOCK"; \
+			cat "$$PROMPT_FILE" >> "$$TMPBLOCK"; \
+			printf '"""\n' >> "$$TMPBLOCK"; \
+		done; \
+		PROMPT_BLOCK="$$TMPBLOCK"; \
 	fi; \
-	echo "Created: $(path)"
+	if [ -e "$(path)" ]; then \
+		if [ -z "$(pr)" ]; then \
+			echo "Error: file '$(path)' already exists"; exit 1; \
+		fi; \
+		TMPFILE=$$(mktemp); \
+		awk -v pfile="$$PROMPT_BLOCK" 'BEGIN{b=0;d=0} !d&&/^"""$$/{if(b){b=0;h=h $$0"\n";next}else{b=1;h=h $$0"\n";next}} !d&&b{h=h $$0"\n";next} !d{d=1;printf "%s",h;while((getline l<pfile)>0)print l;print;next} {print} END{if(!d){printf "%s",h;while((getline l<pfile)>0)print l}}' "$(path)" > "$$TMPFILE" && mv "$$TMPFILE" "$(path)"; \
+		rm -f "$$PROMPT_BLOCK"; \
+		echo "Updated: $(path)"; \
+	else \
+		if [ -n "$(pr)" ]; then \
+			cat "$$PROMPT_BLOCK" > "$(path)"; \
+			rm -f "$$PROMPT_BLOCK"; \
+		else \
+			touch "$(path)"; \
+		fi; \
+		echo "Created: $(path)"; \
+	fi
 
-# target: rename - replace 'py-project-template' with --to value in key project files
-# Usage: make rename --to=my-new-name
-rename:
-ifndef to
-	$(error Argument --to is required. Usage: make rename --to=my-new-name)
+# target: clean - remove leading triple-quoted comment block from a python file
+# Usage: make clean path=src/module.py
+clean:
+ifndef path
+	$(error Argument path is required. Usage: make clean path=src/module.py)
 endif
-	@sed -i 's/py-project-template/$(to)/g' \
-		AGENTS.md \
-		Makefile \
-		pyproject.toml \
-		README.md \
-		docker-compose/docker-compose.dev.yml
-	@sed -i '/^# target: rename/,$$d' Makefile
+	@if [ ! -f "$(path)" ]; then \
+		echo "Error: file '$(path)' does not exist"; exit 1; \
+	fi; \
+	sed -i '/^"""/,/^"""/d' "$(path)"; \
+	sed -i '/./,$$!d' "$(path)"; \
+	echo "Cleaned: $(path)"
