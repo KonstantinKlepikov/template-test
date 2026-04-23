@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+venv
+.venv
+docker
+.git
+docker-compose.yml
+*.pid
+*.patch
+*.po
+README.md
+Makefile
+.env
+logs/

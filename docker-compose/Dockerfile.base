@@ -1,0 +1,27 @@
+FROM python:3.14-slim
+
+STOPSIGNAL SIGTERM
+
+# Keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y git curl && \
+    curl -sSL https://install.python-poetry.org | python3 -
+
+ENV PATH="/root/.local/bin:$PATH"
+
+COPY pyproject.toml poetry.lock /
+RUN POETRY_VIRTUALENVS_CREATE=false poetry install --with dev --no-root
+
+COPY scripts /scripts/
+
+VOLUME /src/logs
+
+ARG VERSION
+ENV VERSION $VERSION
+
+ENTRYPOINT sh ./scripts/start.sh
+# ENTRYPOINT ["tail", "-f", "/dev/null"]

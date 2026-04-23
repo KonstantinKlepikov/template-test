@@ -1,0 +1,21 @@
+version: "3"
+
+name: py-project-template-dev
+
+services:
+
+  py-project-template-dev:
+    env_file: .env
+    restart: unless-stopped
+    build:
+      context: ".."
+      dockerfile: "./docker-compose/Dockerfile.base"
+    volumes:
+    - ../src:/src
+    - ../tests:/tests
+    - /logs:/logs
+    networks:
+    - py-project-template-dev-network
+
+networks:
+  py-project-template-dev-network:
